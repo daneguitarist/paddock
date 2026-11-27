@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>PADDOCK · SamplePad Pro kits</title>
+<!--
+  PADDOCK: build Alesis SamplePad Pro kits on your computer and save them straight to the pad's SD card.
+  GerbilHamster Records. MIT licence (see README.txt).
+  Kit file layout: learned from a kit the pad saved itself, with block offsets first documented by
+  LesserChance's samplepad-editor (https://github.com/LesserChance/samplepad-editor, CC BY 4.0).
+  Not made by or affiliated with Alesis. Nothing here changes the pad's firmware.
+-->
+<style>
+  :root { --bg: #0c120f; --panel: #131b16; --panel2: #18221c; --line: #26342b; --hay: #e9c46a; --saddle: #b5693a;
+          --chalk: #f1ece0; --dim: #8e9a8f; --led: #4aa8ff; --led2: #9fd0ff; --bad: #ff6b57; --good: #7bd88f; --rubber: #1d211f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--chalk); }
+  body { font: 15px/1.4 Bahnschrift, "DIN Alternate", "Segoe UI", system-ui, sans-serif; }
+  button, select, input { font: inherit; color: inherit; }
+  button { background: var(--panel2); border: 1px solid var(--line); border-radius: 7px; padding: 6px 12px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--hay); color: #fff; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  button.go { background: var(--hay); color: #1a1408; border-color: var(--hay); font-weight: 600; }
+  button.go:hover:not(:disabled) { background: #f6d98d; color: #1a1408; }
+  button.small { padding: 2px 8px; font-size: 13px; }
+  :focus-visible { outline: 2px solid var(--led); outline-offset: 2px; }
+  select, input[type=text], input[type=number], input[type=search] { background: #0a0f0c; border: 1px solid var(--line); border-radius: 6px; padding: 5px 7px; }
+  input[type=range] { accent-color: var(--hay); width: 100%; }
+  a { color: var(--hay); }
+  .dim { color: var(--dim); }
+  .bad { color: var(--bad); }
+  .good { color: var(--good); }
+  .warn { color: var(--hay); }
+
+  header { border-bottom: 1px solid var(--line); background: linear-gradient(180deg, #121c16, var(--bg)); }
+  .head { max-width: 1320px; margin: 0 auto; padding: 16px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .head svg { width: 54px; height: 54px; flex: none; }
+  .head h1 { margin: 0; font-size: 30px; letter-spacing: 0.28em; font-weight: 600; color: var(--hay); }
+  .head p { margin: 0; color: var(--dim); }
+  .cardline { margin-left: auto; text-align: right; color: var(--dim); font-size: 14px; }
+  .cardline b { color: var(--chalk); font-weight: 500; }
+
+  main { max-width: 1320px; margin: 0 auto; padding: 16px 20px 40px; }
+  .hidden { display: none !important; }
+
+  /* opening screen */
+  .welcome { max-width: 760px; margin: 30px auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 26px 30px; }
+  .welcome h2 { margin: 0 0 6px; font-weight: 500; color: var(--chalk); }
+  .welcome ol { padding-left: 22px; }
+  .welcome li { margin: 7px 0; }
+  .welcome .open { font-size: 19px; padding: 11px 26px; margin: 10px 0 6px; }
+  kbd { background: #0a0f0c; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font: 13px Consolas, monospace; }
+
+  /* workspace */
+  .work { display: grid; grid-template-columns: 210px minmax(420px, 1fr) 330px; gap: 16px; align-items: start; }
+  .box { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+  .box h3 { margin: 0 0 10px; font-size: 13px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); font-weight: 500; }
+
+  .slots { display: flex; flex-direction: column; gap: 4px; max-height: 640px; overflow: auto; }
+  .slot { display: flex; gap: 8px; align-items: baseline; text-align: left; padding: 6px 9px; border-radius: 7px; background: transparent; border: 1px solid transparent; }
+  .slot .n { color: var(--dim); font: 12px Consolas, monospace; width: 22px; }
+  .slot .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .slot.empty .nm { color: #56635a; font-style: italic; }
+  .slot.on { background: var(--panel2); border-color: var(--hay); }
+  .slot .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--hay); align-self: center; }
+  .slot .live { font-size: 11px; color: #1a1408; background: var(--hay); border-radius: 4px; padding: 0 4px; }
+
+  /* the pad itself */
+  .unit { background: linear-gradient(180deg, #2a2e2c, #202422); border: 1px solid #3a403c; border-radius: 18px; padding: 16px; box-shadow: 0 10px 30px #0008 inset, 0 2px 0 #444a46; }
+  .unittop { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+  .lcd { flex: 1; background: linear-gradient(180deg, #0f2a3d, #0b2030); border: 2px solid #0a0d0c; border-radius: 6px; padding: 6px 12px;
+         font: 17px Consolas, monospace; color: var(--led2); letter-spacing: 0.08em; text-shadow: 0 0 6px #4aa8ff88; min-height: 50px; }
+  .lcd small { display: block; font-size: 12px; color: #6fa6cc; }
+  .kitname { width: 9ch; background: transparent; border: none; border-bottom: 1px dashed #4a7a99; color: var(--led2); font: inherit; letter-spacing: inherit; padding: 0; text-transform: none; }
+  .grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .pad { position: relative; min-height: 104px; border-radius: 10px; background: radial-gradient(120% 90% at 50% 0%, #2b302d, var(--rubber));
+         border: 2px solid #121513; box-shadow: 0 0 0 2px #0d2233, inset 0 -6px 12px #0006; padding: 8px 9px; cursor: pointer; user-select: none;
+         display: flex; flex-direction: column; justify-content: space-between; transition: box-shadow 0.08s, transform 0.05s; overflow: hidden; }
+  .pad.wide { grid-column: span 3; min-height: 64px; }
+  .pad.big { grid-column: span 2; }
+  .pad:hover { box-shadow: 0 0 0 2px #2b5e85, inset 0 -6px 12px #0006; }
+  .pad.sel { box-shadow: 0 0 0 3px var(--hay), inset 0 -6px 12px #0006; }
+  .pad.hit { box-shadow: 0 0 0 3px var(--led), 0 0 22px var(--led), inset 0 0 18px #4aa8ff55; transform: scale(0.985); }
+  .pad.over { box-shadow: 0 0 0 3px var(--good), inset 0 0 18px #7bd88f44; }
+  .pad .lbl { font-size: 12px; color: var(--dim); letter-spacing: 0.06em; display: flex; justify-content: space-between; gap: 6px; }
+  .pad .snd { font-size: 15px; color: var(--chalk); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pad .snd.none { color: #59655d; font-style: italic; }
+  .pad .snd.int { color: var(--led2); }
+  .pad .snd.missing { color: var(--bad); }
+  .pad .tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tag { font-size: 11px; border-radius: 4px; padding: 0 5px; background: #0a0f0c; border: 1px solid var(--line); color: var(--dim); }
+  .tag.b { color: var(--hay); border-color: #6b5a2f; }
+  .tag.int { color: var(--led2); border-color: #26506d; }
+  .lvl { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--hay); opacity: 0.6; }
+  .extras { margin-top: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .extras .pad { min-height: 64px; }
+  .extras h4, .hats h4 { grid-column: 1 / -1; margin: 6px 0 0; font-size: 12px; letter-spacing: 0.14em; color: var(--dim); font-weight: 500; text-transform: uppercase; }
+  .hats { margin-top: 8px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .hats .pad { min-height: 58px; }
+  .belowunit { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .mem { flex: 1; min-width: 200px; }
+  .membar { height: 10px; border-radius: 5px; background: #0a0f0c; border: 1px solid var(--line); overflow: hidden; }
+  .membar i { display: block; height: 100%; background: linear-gradient(90deg, var(--good), var(--hay)); }
+  .membar.full i { background: var(--bad); }
+  .memtext { font-size: 13px; color: var(--dim); margin-top: 3px; }
+
+  /* pad editor */
+  .ed h2 { margin: 0; font-size: 20px; font-weight: 500; }
+  .ed .sub { color: var(--dim); font-size: 13px; margin-bottom: 10px; }
+  .srcpick { display: flex; gap: 6px; margin: 8px 0; }
+  .srcpick button { flex: 1; }
+  .srcpick button.on { border-color: var(--hay); color: var(--hay); }
+  .layer { border: 1px dashed var(--line); border-radius: 9px; padding: 8px; margin: 6px 0; }
+  .layer.over { border-color: var(--good); background: #7bd88f11; }
+  .layer .t { font-size: 12px; color: var(--dim); }
+  .layer .row { display: flex; gap: 6px; align-items: center; }
+  .layer .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .layer .nm.none { color: #59655d; font-style: italic; }
+  .ctl { display: grid; grid-template-columns: 84px 1fr 46px; gap: 8px; align-items: center; margin: 7px 0; }
+  .ctl label { color: var(--dim); font-size: 14px; }
+  .ctl output { text-align: right; font: 14px Consolas, monospace; }
+  .ed select { width: 100%; }
+  .ed details { margin-top: 10px; }
+  .ed summary { cursor: pointer; color: var(--dim); }
+  .help { color: var(--dim); font-size: 13px; margin: 4px 0; }
+  .builtin { display: flex; gap: 6px; }
+  .builtin select { flex: 1; }
+
+  /* library */
+  .lib { margin-top: 16px; }
+  .libbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+  .libbar input[type=search] { flex: 1; min-width: 180px; }
+  .chips { display: flex; gap: 4px; }
+  .chips button { padding: 4px 10px; font-size: 13px; }
+  .chips button.on { border-color: var(--hay); color: var(--hay); }
+  .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 6px; max-height: 360px; overflow: auto; padding: 2px; }
+  .item { display: flex; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 7px; background: var(--panel2); border: 1px solid transparent; cursor: grab; }
+  .item:hover { border-color: var(--line); }
+  .item.playing { border-color: var(--led); }
+  .item.used { border-left: 3px solid var(--hay); }
+  .item .pl { width: 26px; height: 26px; padding: 0; border-radius: 50%; flex: none; font-size: 11px; }
+  .item .nm { flex: 1; min-width: 0; }
+  .item .nm div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .nm small { display: block; font-size: 11px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .nm small.fix { color: var(--hay); }
+  .item .nm small.bad { color: var(--bad); }
+  .drophint { border: 1px dashed var(--line); border-radius: 10px; padding: 10px; text-align: center; color: var(--dim); font-size: 14px; }
+  body.dragging .drophint { border-color: var(--good); color: var(--good); }
+
+  /* save */
+  .savebox { margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .status { font-size: 14px; min-height: 1.4em; }
+  .status.ok { color: var(--good); }
+  .status.err { color: var(--bad); }
+  .prog { height: 8px; border-radius: 4px; background: #0a0f0c; overflow: hidden; margin: 8px 0; }
+  .prog i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--saddle), var(--hay)); transition: width 0.15s; }
+  .steps { margin: 6px 0 0; padding-left: 20px; }
+  .steps li { margin: 5px 0; }
+  .log { font: 12px Consolas, monospace; color: var(--dim); max-height: 140px; overflow: auto; white-space: pre-wrap; margin-top: 6px; }
+  .toast { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); background: var(--panel2); border: 1px solid var(--hay); color: var(--chalk);
+           padding: 10px 18px; border-radius: 10px; box-shadow: 0 8px 30px #000a; z-index: 9; max-width: 90vw; }
+  footer { max-width: 1320px; margin: 0 auto; padding: 0 20px 30px; color: #56635a; font-size: 12px; }
+  @media (max-width: 1100px) { .work { grid-template-columns: 1fr; } .slots { flex-direction: row; flex-wrap: wrap; max-height: none; } .slot { width: 180px; } .savebox { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M14 10 C6 30 10 50 32 56 C54 50 58 30 50 10" fill="none" stroke="#e9c46a" stroke-width="7" stroke-linecap="round"/>
+      <g fill="#0c120f"><circle cx="14" cy="22" r="2"/><circle cx="12" cy="34" r="2"/><circle cx="17" cy="45" r="2"/>
+        <circle cx="50" cy="22" r="2"/><circle cx="52" cy="34" r="2"/><circle cx="47" cy="45" r="2"/></g>
+      <rect x="23" y="20" width="8" height="8" rx="2" fill="#4aa8ff"/><rect x="33" y="20" width="8" height="8" rx="2" fill="#4aa8ff" opacity=".6"/>
+      <rect x="23" y="30" width="8" height="8" rx="2" fill="#4aa8ff" opacity=".6"/><rect x="33" y="30" width="8" height="8" rx="2" fill="#4aa8ff"/>
+    </svg>
+    <div>
+      <h1>PADDOCK</h1>
+      <p>get your SamplePad Pro ready before the race</p>
+    </div>
+    <div class="cardline" id="cardline">no card open</div>
+  </div>
+</header>
+
+<main>
+  <section class="welcome" id="welcome">
+    <h2>Open your SamplePad's card</h2>
+    <p class="dim">PADDOCK reads the kits and sounds on the card. Nothing gets written until you press <b>Save to card</b>, and every kit it replaces is backed up first.</p>
+    <ol>
+      <li><b>On the pad:</b> hold <kbd>▲</kbd> + <kbd>◀</kbd> for 2 seconds, pick <b>Load Samples/Kits Via USB</b>, press <kbd>▶</kbd>. The card shows up as a drive on your computer.
+        <span class="dim">(Or put the SD card in a card reader. That's much faster. Or open a backup copy of the card to look around.)</span></li>
+      <li>Click the button and pick that drive (or folder).</li>
+    </ol>
+    <button class="go open" id="openBtn">Open SamplePad card…</button>
+    <p class="bad hidden" id="noFsa">This browser can't open folders. Open this page in <b>Chrome</b> or <b>Edge</b>.</p>
+    <p class="dim" style="font-size:13px">When you're done: on the pad, hold <kbd>◀</kbd> + <kbd>▲</kbd> for 2 seconds to leave USB mode.</p>
+  </section>
+
+  <section class="hidden" id="app">
+    <div class="work">
+      <div class="box">
+        <h3>Kits on the card</h3>
+        <div class="slots" id="slots"></div>
+        <p class="help" style="margin-top:10px">On the pad these come after the built-in kits.</p>
+      </div>
+
+      <div>
+        <div class="unit">
+          <div class="unittop">
+            <div class="lcd" id="lcd"></div>
+          </div>
+          <div class="grid" id="mainPads"></div>
+          <div class="extras" id="extraPads"></div>
+          <div class="hats" id="hatPads"></div>
+        </div>
+        <div class="belowunit">
+          <div class="mem"><div class="membar" id="membar"><i></i></div><div class="memtext" id="memtext"></div></div>
+          <button class="small" id="midiBtn" title="With the pad plugged in normally (not in USB mode), hitting a pad selects it here">Light up when I hit the pad</button>
+        </div>
+      </div>
+
+      <div class="box ed" id="editor"></div>
+    </div>
+
+    <div class="box lib">
+      <h3>Sounds</h3>
+      <div class="libbar">
+        <input type="search" id="search" placeholder="search sounds… (commas for more than one: cajon, ride)">
+        <div class="chips" id="chips">
+          <button data-f="all" class="on">all</button><button data-f="used">in this kit</button><button data-f="new">new</button>
+        </div>
+        <button id="addBtn">Add sounds from computer…</button>
+        <button id="autoBtn" title="Puts the sounds in the list onto pads by name: kicks, snares, hats, toms, cymbals">Auto-place these on the pads</button>
+        <input type="file" id="fileIn" multiple accept="audio/*,.wav,.aif,.aiff,.mp3,.flac,.ogg,.m4a" class="hidden">
+      </div>
+      <div class="list" id="list"></div>
+      <div class="drophint" style="margin-top:8px">Drop audio files anywhere to add them (any format). Drop one on a pad to put it there. Drag sounds from this list onto pads.</div>
+    </div>
+
+    <div class="savebox">
+      <div class="box">
+        <h3>Save</h3>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button class="go" id="saveBtn" style="font-size:17px;padding:9px 22px">Save to card</button>
+          <button id="lightBtn" title="Makes smaller copies of this kit's sounds (trims silence, mono where the stereo is fake) so the kit loads faster. Your originals stay.">Make this kit load faster</button>
+          <button id="revertBtn">Undo changes</button>
+        </div>
+        <div class="prog hidden" id="prog"><i></i></div>
+        <div class="status" id="status"></div>
+        <div class="log" id="log"></div>
+      </div>
+      <div class="box">
+        <h3>Make the pad start on this kit</h3>
+        <p class="help">The pad always powers on into kit 1. Copy your live kit over it once (and again after you change it):</p>
+        <ol class="steps">
+          <li>On the pad, pick this kit (<b id="bootName">it</b>) on the main screen.</li>
+          <li>Hold <kbd>▼</kbd> + <kbd>▶</kbd> for 2 seconds → <b>COPY KIT</b> → <kbd>▶</kbd>.</li>
+          <li>Source: this kit. Press <kbd>▼</kbd>, set the destination to kit <b>1</b>.</li>
+          <li>Highlight <b>Confirm</b>, press <kbd>▶</kbd>.</li>
+        </ol>
+        <p class="help">Also worth doing once: hold <kbd>▲</kbd> + <kbd>◀</kbd> → <b>Other</b> → <b>Auto-Shutdown</b> → <b>Off</b>, then Save menu → <b>SAVE GLOBAL SETTINGS</b>, so it never switches itself off mid-set.</p>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>PADDOCK 1.0 · GerbilHamster Records · not made by or affiliated with Alesis · nothing here touches the pad's firmware</footer>
+
+<script>/*KIT*/</script>
+<script>/*AUDIO*/</script>
+<script>/*BUILTINS*/</script>
+<script>/*BUILTINSJS*/</script>
+<script>/*PAGE*/</script>
+</body>
+</html>
