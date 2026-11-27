@@ -60,7 +60,7 @@
 
   .slots { display: flex; flex-direction: column; gap: 4px; max-height: 640px; overflow: auto; }
   .slot { display: flex; gap: 8px; align-items: baseline; text-align: left; padding: 6px 9px; border-radius: 7px; background: transparent; border: 1px solid transparent; }
-  .slot .n { color: var(--dim); font: 12px Consolas, monospace; width: 22px; }
+  .slot .n { color: var(--dim); font: 12px Consolas, monospace; width: 22px; }   /* (the pad's kit number) */
   .slot .nm { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .slot.empty .nm { color: #56635a; font-style: italic; }
   .slot.on { background: var(--panel2); border-color: var(--hay); }
@@ -252,19 +252,18 @@
       </div>
       <div class="box">
         <h3>Make the pad start on this kit</h3>
-        <p class="help">The pad always powers on into kit 1. Copy your live kit over it once (and again after you change it):</p>
+        <p class="help">The pad always powers on into kit 1, and its own kits 1–10 can't be saved over (SAVE KIT and COPY KIT won't go there). The kits on the card come after them, from kit 11. So after power-on, highlight the kit number and tap <kbd>▶</kbd> up to this kit (<b id="bootName">it</b>): ten quick taps reach kit 11.</p>
+        <p class="help">Also worth doing once, so it never switches itself off mid-set:</p>
         <ol class="steps">
-          <li>On the pad, pick this kit (<b id="bootName">it</b>) on the main screen.</li>
-          <li>Hold <kbd>▼</kbd> + <kbd>▶</kbd> for 2 seconds → <b>COPY KIT</b> → <kbd>▶</kbd>.</li>
-          <li>Source: this kit. Press <kbd>▼</kbd>, set the destination to kit <b>1</b>.</li>
-          <li>Highlight <b>Confirm</b>, press <kbd>▶</kbd>.</li>
+          <li>Hold <kbd>▲</kbd> + <kbd>◀</kbd> → <b>Other</b> → <b>Auto-Shutdown</b> → <b>Off</b>.</li>
+          <li>Hold <kbd>▼</kbd> + <kbd>▶</kbd> (the Save menu) → <b>SAVE GLOBAL SETTINGS</b> → <kbd>▶</kbd>.</li>
+          <li>Highlight <b>YES</b>, press <kbd>▶</kbd>. (Without the YES it's forgotten at power-off.)</li>
         </ol>
-        <p class="help">Also worth doing once: hold <kbd>▲</kbd> + <kbd>◀</kbd> → <b>Other</b> → <b>Auto-Shutdown</b> → <b>Off</b>, then Save menu → <b>SAVE GLOBAL SETTINGS</b>, so it never switches itself off mid-set.</p>
       </div>
     </div>
   </section>
 </main>
-<footer>PADDOCK 1.0 · GerbilHamster Records · not made by or affiliated with Alesis · nothing here touches the pad's firmware</footer>
+<footer>PADDOCK 1.0.1 · GerbilHamster Records · not made by or affiliated with Alesis · nothing here touches the pad's firmware</footer>
 
 <script>/*KIT*/</script>
 <script>/*AUDIO*/</script>

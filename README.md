@@ -21,10 +21,12 @@ A kit builder for the **Alesis SamplePad Pro** that runs in your web browser. Bu
 
 1. On the pad, hold **▲ + ◀** for 2 seconds, choose **Load Samples/Kits Via USB**, and press **▶**. The card shows up as a drive. (An SD card reader also works and is faster.)
 2. Open PADDOCK, click **Open SamplePad card…** and pick that drive.
-3. Pick a kit slot, build the kit, and press **Save to card**.
+3. Pick a kit (they're numbered the way the pad shows them: the card's kits start at 11), build it, and press **Save to card**.
 4. Leave USB mode (hold **◀ + ▲** for 2 seconds), pick the kit on the pad, and play.
 
-**Make the pad power on into your live kit.** The pad always starts on kit 1. On the pad, hold **▼ + ▶**, choose **COPY KIT**, set the source to your kit and the destination to kit 1, then **Confirm**. While you're there, set **Options → Other → Auto-Shutdown** to **Off** and **SAVE GLOBAL SETTINGS**, so the pad never switches off mid-set.
+**Getting to your live kit.** The pad always powers on into kit 1, and its own kits 1–10 can't be saved over (SAVE KIT and COPY KIT won't go there). The kits on the card come after them, from kit 11, so after power-on highlight the kit number and tap **▶** up to your kit: ten quick taps reach kit 11.
+
+**Stop it switching itself off mid-set.** Hold **▲ + ◀** → **Other** → **Auto-Shutdown** → **Off**. Then hold **▼ + ▶** (the Save menu) → **SAVE GLOBAL SETTINGS** → **▶** → highlight **YES** → **▶**. Without the YES, the pad forgets it at power-off.
 
 ## Safety
 

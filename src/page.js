@@ -18,6 +18,9 @@ const MODE_HELP = ['each hit overlaps the last', 'each hit cuts off the last', '
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const noteName = n => NOTE_NAMES[n % 12] + (Math.floor(n / 12) - 1);
 const pad3 = n => String(n).padStart(3, '0');
+// (1.0.1) the pad's own kits are 1-10, so card slot 1 (USER_001.KIT) is kit 11 on the pad, slot 2 is kit 12...
+const FIRST_CARD_KIT = 11;
+const padKit = n => n + FIRST_CARD_KIT - 1;
 const kitFile = n => `USER_${pad3(n)}.KIT`;
 const natural = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 const $ = id => document.getElementById(id);
@@ -254,7 +257,7 @@ function renderSlots() {
     const s = S.saved[n], w = S.work[n];
     const name = w ? w.name : s && s.kit ? s.kit.name : s && s.error ? 'unreadable kit' : 'empty';
     box.append(h('button', { class: 'slot' + (n === S.slot ? ' on' : '') + (!s && !w ? ' empty' : ''), onclick: () => { S.slot = n; render(); } },
-      h('span', { class: 'n', text: pad3(n) }), h('span', { class: 'nm', text: name }),
+      h('span', { class: 'n', text: String(padKit(n)), title: kitFile(n) }), h('span', { class: 'nm', text: name }),
       isDirty(n) ? h('span', { class: 'dot', title: 'unsaved changes' }) : null));
   }
 }
@@ -291,7 +294,7 @@ function renderPads() {
   $('hatPads').replaceChildren(h('h4', { text: 'Hi-hat pedal positions (only used with a hi-hat pedal)' }), ...HATS.map(pos => padEl(pos)));
   const lcd = $('lcd');
   if (!w) {
-    lcd.replaceChildren(h('div', { text: `SLOT ${pad3(S.slot)}  —  EMPTY` }), h('small', { text: `${kitFile(S.slot)} isn't on the card yet` }));
+    lcd.replaceChildren(h('div', { text: `KIT ${padKit(S.slot)}  —  EMPTY` }), h('small', { text: `${kitFile(S.slot)} isn't on the card yet` }));
   } else {
     const inp = h('input', { class: 'kitname', value: w.name, maxLength: 8, spellcheck: false, title: 'kit name (letters and numbers, up to 8)' });
     inp.addEventListener('input', () => {
@@ -299,7 +302,7 @@ function renderPads() {
       if (v !== inp.value) inp.value = v;
       w.name = v || 'KIT'; renderSlots(); $('bootName').textContent = w.name;
     });
-    lcd.replaceChildren(h('div', {}, 'KIT ', inp), h('small', { text: `card slot ${S.slot} · ${kitFile(S.slot)}${isDirty(S.slot) ? ' · not saved yet' : ''}` }));
+    lcd.replaceChildren(h('div', {}, 'KIT ', inp), h('small', { text: `kit ${padKit(S.slot)} on the pad · ${kitFile(S.slot)}${isDirty(S.slot) ? ' · not saved yet' : ''}` }));
   }
   $('bootName').textContent = w ? w.name : 'it';
 }
@@ -346,12 +349,12 @@ function renderEditor() {
   const ed = $('editor'), w = work();
   if (!w) {
     const others = Object.keys(S.saved).map(Number).filter(n => S.saved[n].kit || S.work[n]);
-    const sel = h('select', {}, others.map(n => h('option', { value: n, text: `${pad3(n)} ${(getWork(n) || {}).name}` })));
-    ed.replaceChildren(h('h2', { text: `Slot ${S.slot} is empty` }),
+    const sel = h('select', {}, others.map(n => h('option', { value: n, text: `kit ${padKit(n)} ${(getWork(n) || {}).name}` })));
+    ed.replaceChildren(h('h2', { text: `Kit ${padKit(S.slot)} is empty` }),
       h('p', { class: 'help', text: 'Start a kit here. It goes onto the card when you press Save.' }),
-      h('button', { class: 'go', text: 'Start a blank kit', onclick: () => { S.work[S.slot] = blankWork('KIT' + S.slot); render(); } }),
+      h('button', { class: 'go', text: 'Start a blank kit', onclick: () => { S.work[S.slot] = blankWork('KIT' + padKit(S.slot)); render(); } }),
       others.length ? h('div', { style: 'margin-top:12px;display:flex;gap:6px' }, sel,
-        h('button', { text: 'Copy that kit here', onclick: () => { const src = getWork(+sel.value); S.work[S.slot] = copyWork(src, (src.name + S.slot).slice(0, 8)); render(); } })) : null);
+        h('button', { text: 'Copy that kit here', onclick: () => { const src = getWork(+sel.value); S.work[S.slot] = copyWork(src, (src.name + padKit(S.slot)).slice(0, 8)); render(); } })) : null);
     return;
   }
   const pos = S.sel, p = w.pads[pos];
@@ -459,7 +462,7 @@ function dropTarget(el, onKey, onFiles) {
   el.addEventListener('dragleave', () => el.classList.remove('over'));
   el.addEventListener('drop', ev => {
     ev.preventDefault(); ev.stopPropagation(); el.classList.remove('over'); document.body.classList.remove('dragging');
-    if (!work()) { toast('Start a kit in this slot first.'); return; }
+    if (!work()) { toast('Start a kit here first.'); return; }
     const key = ev.dataTransfer.getData('text/x-paddock');
     if (key) onKey(key); else if (ev.dataTransfer.files.length) onFiles([...ev.dataTransfer.files]);
   });
@@ -507,7 +510,7 @@ function roleOf(name) {
 }
 function autoPlace() {
   const w = work();
-  if (!w) { toast('Start a kit in this slot first.'); return; }
+  if (!w) { toast('Start a kit here first.'); return; }
   const items = visibleItems().filter(it => it.src !== 'missing');
   if (!items.length) { toast('No sounds in the list to place. Search for some first (try "cajon").'); return; }
   const by = {};
@@ -611,7 +614,7 @@ async function save() {
     w.raw = kit.raw;
     tick(); prog(null);
     log(`wrote KITS\\${file} and read it back: identical`);
-    setStatus(`And they're off! "${w.name}" is saved in card slot ${n}${toWrite.length ? ` with ${toWrite.length} new sound file${toWrite.length > 1 ? 's' : ''}` : ''}.` +
+    setStatus(`And they're off! "${w.name}" is saved as kit ${padKit(n)}${toWrite.length ? ` with ${toWrite.length} new sound file${toWrite.length > 1 ? 's' : ''}` : ''}.` +
       (missing.length ? ` (${missing.length} sound${missing.length > 1 ? 's' : ''} this kit points to ${missing.length > 1 ? 'aren\'t' : 'isn\'t'} on the card.)` : ''), 'ok');
     render();
   } catch (e) {
